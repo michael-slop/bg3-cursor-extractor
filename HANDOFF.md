@@ -28,11 +28,19 @@ They live at `Cursors/` — *top level* inside `Data\Game.pak`, not under
 `MC_loader_anim/` (14 PNG frames). BG3's UI is NoesisGUI, which speaks `.cur`/`.ani`
 natively, so **no conversion is needed**. Don't build a DDS pipeline; it's wasted work.
 
-**2. The `_1`/`_2` pairs are hover states, NOT animation frames.**
-`_1` = active/highlighted, `_2` = dimmed. The padlock is closed in `_1` and open in
-`_2`; the speech bubble is bright vs grey. The game swaps them on hover, which reads
-as "animation" in play. Only the loading hourglass is genuinely frame-animated.
-`build_set.py` uses the `_1` variants. Verify visually before assuming otherwise.
+**2. The `_1`/`_2` pairs are mouse-up / mouse-down frames.**
+`_1` = released, `_2` = pressed. The pointing finger curls in, the glove closes to a
+fist, the bow looses its arrow, the padlock's shackle swings open. BG3 swaps them the
+instant you press a button.
+
+**Windows `.ani` cannot do this.** The format plays frames on a fixed timer and has no
+click trigger, so building a pair into an `.ani` produces a cursor that twitches
+constantly whether you're clicking or not. Don't try it — it was tried, installed, and
+reverted. `build_set.py` installs the `_1` frame statically; `bg3_cursor_click.py`
+supplies the pressed frame via a `WH_MOUSE_LL` hook calling `SetSystemCursor`.
+
+The loading hourglass is the exception — a genuine 14-frame timed animation, so it
+ships as a real `.ani`.
 
 ## Traps
 
@@ -81,8 +89,24 @@ powershell -File scripts/Install-BG3Cursors.ps1 -Uninstall  # revert
 rather than trusting that a file was written. The installer runs this check itself and
 aborts before touching the registry if anything fails.
 
+## Process note
+
+The `_1`/`_2` meaning was got wrong **twice** — first "hover states", then "continuous
+animation" — before simply asking Michael, who plays the game and knew it was click.
+Both wrong answers were written into the docs as settled fact, and the second one put a
+twitching pointer on two live machines before being reverted.
+
+For anything about how software *behaves in use* — when something triggers, what it
+looks like, whether it loops — ask him rather than inferring from the files. The files
+say what the bytes are; they don't say when the game decides to show them. Full account
+in `Desktop\BG3-Cursors\WHAT-WENT-WRONG.txt`.
+
 ## Possible next steps (none started)
 
 - Larger cursors for 4K: the game has no higher-res source, so this means upscaling.
   Prefer raising the Windows cursor-size slider first.
 - A `-Slot` flag on the installer to swap one cursor without redoing the whole scheme.
+- Extend `bg3_cursor_click.py` beyond Arrow/Hand — the pairs exist for ~45 cursors, but
+  Windows only exposes a handful of system slots worth swapping.
+- Optional: a tray icon / autostart shortcut for the click hook, so it survives reboot
+  without a manual Startup-folder step.

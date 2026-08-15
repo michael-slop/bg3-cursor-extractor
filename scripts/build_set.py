@@ -8,7 +8,8 @@ RAW = "raw/Cursors"
 OUT = "out"
 
 # Windows slot -> (BG3 source file, hotspot override or None to keep original)
-# The _1 variants are the bright/active art; _2 are the dimmed state.
+# Naming a _1 file uses the mouse-up frame. Its _2 partner is the mouse-down
+# frame, swapped in at click time by bg3-cursor-click, not by the .cur itself.
 MAPPING = {
     # slot name          source                          hotspot
     "Arrow":            ("Cursor_Arrow_1.cur",            None),
@@ -63,6 +64,12 @@ def main():
     for slot, (src, hs) in MAPPING.items():
         if src is None:
             continue
+
+        # NOTE: the _1/_2 pairs are input STATES (mouse-up / mouse-down), not a
+        # timed loop. Building them into a .ani makes Windows play them on a
+        # timer, which is wrong - the cursor twitches constantly. The mouse-up
+        # frame goes in the slot statically; click-swapping is the job of
+        # bg3-cursor-click (a mouse hook), because .ani has no click trigger.
         s = os.path.join(RAW, src)
         if not os.path.exists(s):
             print(f"  !! missing source {src} for {slot}")

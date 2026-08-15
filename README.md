@@ -64,6 +64,23 @@ python scripts/build_set.py
 powershell -ExecutionPolicy Bypass -File scripts/Install-BG3Cursors.ps1
 ```
 
+### Click animation (optional)
+
+To get the pressed frame on real clicks — the finger curling in as you hold the
+button, exactly like the game:
+
+```bash
+pythonw scripts/bg3_cursor_click.py --raw scripts/raw/Cursors
+```
+
+It installs a `WH_MOUSE_LL` hook, calls `SetSystemCursor` on button-down and
+button-up, and restores your cursors on every exit path. Standard library only —
+no extra packages. It does not survive a reboot; add a shortcut to your Startup
+folder (`shell:startup`) if you want it permanent.
+
+Skip it and everything still works — you just get the mouse-up frame all the time,
+which looks entirely normal.
+
 Undo at any time:
 
 ```powershell
@@ -101,11 +118,20 @@ cursor is malformed it aborts and changes nothing.
 
 ## Things worth knowing
 
-**The `_1` / `_2` pairs are not animation frames.** This trips people up. `_1` is
-the *active / highlighted* state and `_2` is the *dimmed* state — the padlock is
-closed in one and open in the other, the speech bubble is bright vs grey. The game
-swaps them on hover, which reads as animation in play. Only the loading hourglass
-is genuinely frame-animated. `build_set.py` uses the `_1` variants.
+**The `_1` / `_2` pairs are input states, not a timed loop.** `_1` is the mouse-up
+frame and `_2` is the mouse-down frame — the pointing finger curls in, the glove
+closes to a fist, the bow looses its arrow, the padlock's shackle swings open. BG3
+swaps them the instant you press a button.
+
+This matters because **Windows cursor files cannot reproduce that.** The `.ani`
+format plays its frames on a fixed timer and has no click trigger, so building a
+pair into an `.ani` gives you a cursor that twitches constantly whether you're
+clicking or not. `build_set.py` therefore installs the mouse-up frame statically,
+and `bg3_cursor_click.py` delivers the pressed frame via a low-level mouse hook —
+see [Click animation](#click-animation-optional).
+
+The loading hourglass is the exception: that one *is* a real 14-frame timed
+animation in the game, so it ships as a true `.ani` and needs no helper.
 
 **Cursors are 32×32** (the hourglass is 40×40). That's the game's native size — not
 a limitation of this tool. There is no higher-resolution version in the game files.
@@ -128,6 +154,7 @@ the unmodified game file.
 | `scripts/extract.py` | Finds your BG3 install, pulls `Cursors/*` out of `Game.pak` |
 | `scripts/build_set.py` | Maps cursors to Windows slots, fixes hotspots, builds the `.ani` |
 | `scripts/make_ani.py` | A from-scratch RIFF/ACON encoder — PNG frames → Windows `.ani` |
+| `scripts/bg3_cursor_click.py` | Mouse hook that swaps to the pressed frame on click |
 | `scripts/Install-BG3Cursors.ps1` | Registers the scheme, with backup and clean uninstall |
 | `scripts/verify_ani.ps1` | Asks Win32 to load each cursor — catches malformed files |
 
