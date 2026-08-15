@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------
+# NEVER COMMIT GAME ARTWORK.
+#
+# This repo distributes the extraction TOOLING only. The cursor
+# art belongs to Larian Studios and must not be redistributed.
+# Everything below is output that the scripts produce locally.
+# ---------------------------------------------------------------
+
+# Extracted / generated cursor art
+*.cur
+*.ani
+*.dds
+*.DDS
+
+# Working directories the scripts write into
+raw/
+out/
+package/
+tiles/
+cmp/
+extracted/
+BG3-Cursors/
+All-Cursors/
+Loading-Frames/
+
+# Contact sheets and montages are built from game art
+CONTACT-SHEET.png
+contact-sheet.png
+montage*.png
+
+# Loading-animation frames ripped from the game
+MC_loading_frame*.png
+MC_loader_anim/
+
+# The extraction tool itself (download it yourself, don't vendor it)
+lslib/
+ExportTool*.zip
+Divine.exe
+
+# Packaged output
+*.zip
+*.7z
+*.rar
+
+# Cursor registry backups (contain local paths)
+backup/
+*.reg
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editor cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
