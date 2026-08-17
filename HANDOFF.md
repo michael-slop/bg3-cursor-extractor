@@ -13,12 +13,32 @@ are extractable and dramatically better.
 
 ## State: done and deployed
 
-- Applied and verified live on **pHub** and **SloppyLaptopy**.
-- `Desktop\BG3-Cursors.zip` (400 KB) is the portable copy — all 100 cursors plus a
-  double-click installer. Also sitting on SloppyLaptopy's desktop.
-- Pipeline re-verified end to end from a clean state after the last fix.
+- Applied and verified live on **pHub** and **SloppyLaptopy**, plus a third-party
+  machine (a friend of Michael's) — the pack now has users beyond this house, which is
+  why portability beats machine-specific integrations.
+- `Desktop\BG3-Cursors.zip` (~420 KB) is the portable copy — all 100 cursors, the
+  click-animation helper, and numbered install/autostart/uninstall launchers.
+- Pipeline re-verified end to end from a clean state after each fix, including a
+  fresh-unzip run from a non-Desktop path.
 
-Nothing is in progress. No known bugs.
+### One item outstanding (2026-08-17)
+
+**SloppyLaptopy has not received the login-autostart update.** It was hibernated (lid
+closed) when the work finished. pHub is fully done. The laptop still has the older
+click-hook script and no Startup shortcut, so its animation will still need a manual
+start after boot until this is applied.
+
+To finish it when the lid is next open:
+
+```bash
+scp /tmp/bg3autostart.tgz laptop:/Users/micha/bg3autostart.tgz
+scp "$SCRATCH/deploy_laptop_autostart.ps1" laptop:/Users/micha/deploy.ps1
+ssh laptop 'powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\micha\deploy.ps1'
+```
+
+The tarball may need rebuilding from `Desktop\BG3-Cursors\` if it has aged out of
+`/tmp`; the deploy script is idempotent and prints what it verified. Do **not** try to
+wake the laptop — it is not wake-programmable by design.
 
 ## The two things everyone gets wrong
 
