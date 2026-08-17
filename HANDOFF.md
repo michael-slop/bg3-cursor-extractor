@@ -42,6 +42,35 @@ supplies the pressed frame via a `WH_MOUSE_LL` hook calling `SetSystemCursor`.
 The loading hourglass is the exception — a genuine 14-frame timed animation, so it
 ships as a real `.ani`.
 
+## The click hook needs an autostart (fixed 2026-08-17)
+
+The static cursors persist because they are registry entries. The click animation is
+a **process**, so it dies at shutdown and the cursors go static until it is started
+again. Reported as "doesn't animate until I relaunch that py script" — it was never
+running at login, because nothing started it. Verified at the time: no entry in
+HKCU/HKLM `Run`/`RunOnce`, neither Startup folder, none of 216 scheduled tasks.
+
+Fixed with a Startup-folder shortcut, created by `4 - RUN AT LOGIN (set up).bat` in
+the pack (`5 - ...(remove).bat` undoes it). Two details that matter:
+
+- The shortcut's target must be an **absolute** `pythonw.exe` path. Every Python on
+  pHub is a user-scope install resolved via *user* `PATH`; a bare `pythonw` is not
+  dependable for a login-launched process.
+- `bg3_cursor_click.py` now takes a named mutex (`Local\bg3_cursor_click`). Without
+  it, the autostart plus a hand-run `2 - ADD CLICK ANIMATION.bat` gives two hooks
+  fighting over `SetSystemCursor`, and the pressed frame sticks or flickers.
+
+**GlazeWM `startup_commands` was considered and deliberately rejected** — don't
+"fix" it that way later. It only helps machines running GlazeWM (the pack now has
+third-party users who don't), and that config was being edited by a concurrent
+session at the time, which is a known hazard here.
+
+Also fixed alongside: `--raw` used to default to `<script dir>\raw\Cursors`, which
+does not exist in the shipped pack (frames live in `frames\`), and the error message
+pointed at `extract.py`, which the pack does not contain. A no-argument launch
+therefore failed with dead-end advice. It now falls back `./frames` →
+`./raw/Cursors` → `../frames` and names the paths it tried.
+
 ## Traps
 
 - **`Divine.exe` rejects relative `-d` paths** — fails with

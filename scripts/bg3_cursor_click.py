@@ -9,6 +9,10 @@ Run it:
     pythonw bg3_cursor_click.py            # background, no console
     python  bg3_cursor_click.py --verbose  # with logging
 
+The frame folder is found automatically (./frames, then ./raw/Cursors); pass
+--raw to override. Only one copy runs at a time - a second launch exits rather
+than fighting the first over SetSystemCursor.
+
 Stop it with Ctrl+C, or by killing the process. Cursors are ALWAYS restored on
 exit - including on Ctrl+C, logoff, and taskkill - via SystemParametersInfo.
 """
@@ -21,6 +25,7 @@ import sys
 import atexit
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
 # --- Win32 constants ---------------------------------------------------------
 WH_MOUSE_LL      = 14
@@ -66,6 +71,39 @@ def load_cursor(path):
 def restore_system_cursors():
     """Put Windows' own cursor scheme back. Safe to call more than once."""
     user32.SystemParametersInfoW(SPI_SETCURSORS, 0, None, SPIF_SENDCHANGE)
+
+
+ERROR_ALREADY_EXISTS = 183
+_mutex = None  # module-level so the handle outlives claim_single_instance()
+
+
+def claim_single_instance(name=r"Local\bg3_cursor_click"):
+    """True if we got the lock; False if another copy already holds it.
+
+    An autostart entry and a hand-run .bat can otherwise both start a hook, and
+    two hooks fight over SetSystemCursor - the pressed frame sticks or flickers.
+    """
+    global _mutex
+    _mutex = kernel32.CreateMutexW(None, True, name)
+    return ctypes.get_last_error() != ERROR_ALREADY_EXISTS
+
+
+def resolve_raw_dir(explicit, here):
+    """Find the folder holding the Cursor_*_1/_2.cur frames.
+
+    The distributed pack keeps them in Click-Animation\\frames; a working repo
+    keeps them in raw\\Cursors. Try both rather than making --raw mandatory,
+    because an autostart shortcut that omits the flag would fail silently.
+    """
+    candidates = [explicit] if explicit else [
+        os.path.join(here, "frames"),
+        os.path.join(here, "raw", "Cursors"),
+        os.path.join(os.path.dirname(here), "frames"),
+    ]
+    for c in candidates:
+        if c and os.path.isdir(c):
+            return c, candidates
+    return None, candidates
 
 
 class ClickSwapper:
@@ -132,20 +170,33 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     here = os.path.dirname(os.path.abspath(__file__))
-    ap.add_argument("--raw", default=os.path.join(here, "raw", "Cursors"),
-                    help="folder of extracted Cursor_*.cur files")
+    ap.add_argument("--raw", default=None,
+                    help="folder of Cursor_*_1/_2.cur frames "
+                         "(default: ./frames, then ./raw/Cursors)")
     ap.add_argument("--cursors", default=os.path.join(here, "out"),
                     help="folder of built BG3_*.cur slot files")
     ap.add_argument("--verbose", action="store_true", help="log each press")
     args = ap.parse_args()
 
-    if not os.path.isdir(args.raw):
-        sys.exit(f"ERROR: no extracted cursors at {args.raw}\n"
-                 f"       Run extract.py first.")
+    raw, tried = resolve_raw_dir(args.raw, here)
+    if not raw:
+        sys.exit("ERROR: could not find the cursor frames.\n\n"
+                 "       Looked in:\n"
+                 + "".join(f"         {p}\n" for p in tried)
+                 + "\n       Pass the folder explicitly:\n"
+                   "         --raw \"<path to the frames folder>\"\n\n"
+                   "       In the cursor pack that folder is\n"
+                   "       Click-Animation\\frames, and the easiest way to start\n"
+                   "       this is \"2 - ADD CLICK ANIMATION (needs Python).bat\".")
 
-    pairs = build_pairs(args.cursors, args.raw)
+    # One hook only - see claim_single_instance().
+    if not claim_single_instance():
+        print("bg3-cursor-click is already running; leaving the existing one alone.")
+        return
+
+    pairs = build_pairs(args.cursors, raw)
     if not pairs:
-        sys.exit(f"ERROR: no _1/_2 cursor pairs found in {args.raw}")
+        sys.exit(f"ERROR: no _1/_2 cursor pairs found in {raw}")
 
     sw = ClickSwapper(pairs, verbose=args.verbose)
 

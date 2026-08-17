@@ -75,11 +75,29 @@ pythonw scripts/bg3_cursor_click.py --raw scripts/raw/Cursors
 
 It installs a `WH_MOUSE_LL` hook, calls `SetSystemCursor` on button-down and
 button-up, and restores your cursors on every exit path. Standard library only —
-no extra packages. It does not survive a reboot; add a shortcut to your Startup
-folder (`shell:startup`) if you want it permanent.
+no extra packages.
 
-Skip it and everything still works — you just get the mouse-up frame all the time,
-which looks entirely normal.
+The frames folder is found automatically (`./frames`, then `./raw/Cursors`), so
+`--raw` is optional. A named mutex (`Local\bg3_cursor_click`) keeps it to one
+instance — a second launch exits quietly rather than fighting the first over
+`SetSystemCursor`, which matters once an autostart entry and a manual launch both
+exist.
+
+**It is a process, so it stops at shutdown.** To start it at login, create a
+Startup-folder shortcut whose target is an absolute `pythonw.exe` path:
+
+```
+target    C:\...\pythonw.exe
+arguments "<pack>\Click-Animation\bg3_cursor_click.py" --raw "<pack>\Click-Animation\frames"
+```
+
+Use the absolute interpreter path, not a bare `pythonw` — Python is often a
+user-scope install resolved through the *user* `PATH`, which is not dependable for
+every login-launched process. The cursor pack ships
+`4 - RUN AT LOGIN (set up).bat` / `5 - RUN AT LOGIN (remove).bat` to do this.
+
+Skip the hook entirely and everything still works — you just get the mouse-up frame
+all the time, which looks entirely normal.
 
 Undo at any time:
 
