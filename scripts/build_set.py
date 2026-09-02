@@ -21,7 +21,12 @@ MAPPING = {
     "NWPen":            ("Cursor_Repair_1.cur",           None),
     "No":               ("Cursor_Cross_1.cur",            (16, 16)),
     "SizeNS":           ("Cursor_scalerArrowV.cur",       (16, 16)),
-    "SizeNESW":         ("Cursor_scalerArrow.cur",        (16, 16)),
+    # scalerArrow runs upper-left to lower-right: that is NW-SE, the cursor for
+    # a top-left / bottom-right corner. The first release put it in SizeNESW
+    # and rotated it into SizeNWSE, so at every corner the diagonal ran the
+    # wrong way -- noticed on a Surface, where the corner is where the pen is.
+    # Checked by rendering the .cur to pixels (2026-09-01), not by its name.
+    "SizeNWSE":         ("Cursor_scalerArrow.cur",        (16, 16)),
     "SizeAll":          ("Cursor_ItemMove_1.cur",         (16, 16)),
     "UpArrow":          ("Cursor_Bow_1.cur",              None),
     "Hand":             ("Cursor_ItemPickUp_1.cur",       None),
@@ -29,10 +34,11 @@ MAPPING = {
     "Pin":              ("Cursor_Listen_1.cur",           None),
 }
 
-# BG3 ships only two scaler arrows: scalerArrow is diagonal (NE-SW) and
-# scalerArrowV is vertical. Rotate each 90 deg to get the missing pair.
+# BG3 ships only two scaler arrows: scalerArrow is diagonal (NW-SE, see the
+# note in MAPPING) and scalerArrowV is vertical. Rotate each 90 deg to get the
+# missing pair.
 DERIVED = {
-    "SizeNWSE": ("Cursor_scalerArrow.cur", 90),   # NE-SW -> NW-SE
+    "SizeNESW": ("Cursor_scalerArrow.cur", 90),   # NW-SE -> NE-SW
     "SizeWE":   ("Cursor_scalerArrowV.cur", 90),  # vertical -> horizontal
 }
 
